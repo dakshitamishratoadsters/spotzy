@@ -32,3 +32,9 @@ class SignupResponse(BaseModel):
 class Login(BaseModel):
     email: EmailStr
     password: str
+
+class UserUpdate(BaseModel):
+    first_name: str
+    last_name: str
+    user_name: str
+    email: EmailStr

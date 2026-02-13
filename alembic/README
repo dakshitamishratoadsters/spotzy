@@ -1,1 +1,5 @@
-Generic single-database configuration.
+Spotzy 🚗
+
+Spotzy is a parking management system that helps users find and book parking spots easily. It's built using FastAPI, SQLModel, and PostgreSQL.
+
+Spotzy is a simple parking management system that helps users find and book parking spots quickly. Users can register, view available spots, and make bookings online. It also supports payment management and an admin dashboard for easy parking control. Built with FastAPI, SQLModel, and PostgreSQL, Spotzy makes parking organized and hassle-free.

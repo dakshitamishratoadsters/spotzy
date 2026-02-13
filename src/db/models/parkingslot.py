@@ -1,12 +1,13 @@
 import uuid
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional,TYPE_CHECKING
 
 from sqlmodel import SQLModel, Field, Relationship
 from sqlalchemy import Column
 from sqlalchemy.dialects import postgresql as pg
-from src.db.models.booking import Booking
-from src.db.models.parkinglot import ParkingLot
+if TYPE_CHECKING:
+  from src.db.models.booking import Booking
+  from src.db.models.parkinglot import ParkingLot
 
 
 # ===================== PARKING SLOT =====================
