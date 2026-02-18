@@ -3,12 +3,20 @@ from datetime import datetime
 from typing import List, Optional ,TYPE_CHECKING
 
 from sqlmodel import SQLModel, Field, Relationship
-from sqlalchemy import Column
+from sqlalchemy import Column, Enum
 from sqlalchemy.dialects import postgresql as pg
+from enum import Enum
 if TYPE_CHECKING:
   from src.db.models.user import User 
   from src.db.models.parkingslot import ParkingSlot
   from src.db.models.payment import Payment
+  
+
+class BookingStatus(str, Enum):
+    BOOKED = "BOOKED"
+    CANCELLED = "CANCELLED"
+    COMPLETED = "COMPLETED"
+
 
 
 
@@ -24,8 +32,11 @@ class Booking(SQLModel, table=True):
     start_time: datetime
     end_time: datetime
 
-    status: str = Field(
-        sa_column=Column(pg.VARCHAR, nullable=False, server_default="BOOKED")
+    status: BookingStatus = Field(
+    sa_column=Column(
+        pg.VARCHAR,
+        nullable=False,
+        server_default=BookingStatus.BOOKED.value)
     )
 
     user_id: uuid.UUID = Field(

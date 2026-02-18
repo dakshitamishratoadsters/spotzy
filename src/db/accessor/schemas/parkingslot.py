@@ -1,4 +1,4 @@
-from sqlmodel import BaseModel
+from pydantic import BaseModel
 from uuid import UUID
 # ---------- PARKING SLOT ----------
 class SlotCreate(BaseModel):
@@ -6,7 +6,7 @@ class SlotCreate(BaseModel):
 
 
 class SlotResponse(BaseModel):
-    id: UUID
+    uid: UUID
     slot_number: str
     is_available: bool
 

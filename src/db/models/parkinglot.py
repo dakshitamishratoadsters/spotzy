@@ -1,7 +1,6 @@
 import uuid
 from datetime import datetime
 from typing import List, Optional ,TYPE_CHECKING
-
 from sqlmodel import SQLModel, Field, Relationship
 from sqlalchemy import Column
 from sqlalchemy.dialects import postgresql as pg
@@ -24,7 +23,7 @@ class ParkingLot(SQLModel, table=True):
     latitude: float
     longitude: float
     total_slots: int = Field(nullable=False)
-
+    available_slots: int = Field(default=0)
     admin_id: uuid.UUID = Field(
         foreign_key="users.uid",
         nullable=False

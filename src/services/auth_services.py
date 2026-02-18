@@ -1,16 +1,10 @@
 from datetime import timedelta
-from jose import JWTError
 from fastapi import HTTPException, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from src.services.user_services import UserService
-from src.utils.auth import (
-    verify_password,
-    create_access_token,
-    decode_access_token
-)
+from src.utils.auth import verify_password, create_access_token, decode_token
 from src.db.models.user import User
-
 
 ACCESS_TOKEN_EXPIRE_HOURS = 24
 
@@ -37,7 +31,6 @@ class AuthService:
                 detail="Invalid email or password"
             )
 
-        # optional but recommended
         if hasattr(user, "is_active") and not user.is_active:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -45,11 +38,8 @@ class AuthService:
             )
 
         access_token = create_access_token(
-            data={
-                "sub": str(user.uid),
-                "role": user.role
-            },
-            expires_delta=timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
+            user_id=str(user.uid),
+            expiry=timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
         )
 
         return {
@@ -65,20 +55,19 @@ class AuthService:
         session: AsyncSession
     ) -> User:
 
-        try:
-            payload = decode_access_token(token)
-            user_id: str | None = payload.get("sub")
+        payload = decode_token(token)
 
-            if not user_id:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid token"
-                )
-
-        except JWTError:
+        if not payload:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid or expired token"
+            )
+
+        user_id = payload.get("sub")
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token payload"
             )
 
         user = await session.get(User, user_id)
@@ -93,12 +82,10 @@ class AuthService:
 
     # ---------------- ADMIN CHECK ----------------
 
-    async def require_admin(
-        self,
-        user: User
-    ) -> None:
+    async def require_admin(self, user: User) -> None:
         if user.role != "admin":
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Admin access required"
             )
+

@@ -3,7 +3,7 @@ from pydantic import EmailStr
 from sqlmodel.ext.asyncio.session import AsyncSession
 from uuid import UUID
 from src.db.models import User
-from src.db.accessor.schemas import UserCreate
+from src.db.accessor.schemas.user import Signup,SignupResponse
 from src.utils.auth import generate_password_hash
 
 
@@ -15,8 +15,8 @@ class UserService:
         session: AsyncSession
     ) -> User :
         statement = select(User).where(User.email == email)
-        result = await session.exec(statement)
-        return result.first()
+        result = await session.execute(statement)
+        return result.scalar_one_or_none()
 
     async def get_user_by_id(
         self,
@@ -35,7 +35,7 @@ class UserService:
 
     async def create_user(
         self,
-        user_data: UserCreate,
+        user_data: Signup,
         session: AsyncSession
     ) -> User:
         user_data_dict = user_data.model_dump()

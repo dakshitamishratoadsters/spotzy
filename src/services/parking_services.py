@@ -7,7 +7,8 @@ from datetime import datetime
 from src.db.models.parkinglot import ParkingLot
 from src.db.models.parkingslot import ParkingSlot
 from src.db.models.booking import Booking
-from src.db.accessor.schemas import ParkingLotCreate, SlotCreate
+from src.db.accessor.schemas.parkinglot import ParkingLotCreate
+from src.db.accessor.schemas.parkingslot import  SlotCreate
 
 
 class ParkingService:
@@ -17,9 +18,10 @@ class ParkingService:
     async def create_parking_lot(
         self,
         parking_data: ParkingLotCreate,
-        session: AsyncSession
+        session: AsyncSession,
+        admin_id:UUID
     ) -> ParkingLot:
-        parking_lot = ParkingLot(**parking_data.model_dump())
+        parking_lot = ParkingLot(**parking_data.model_dump(), admin_id=admin_id)
 
         session.add(parking_lot)
         await session.commit()
@@ -31,8 +33,8 @@ class ParkingService:
         self,
         session: AsyncSession
     ):
-        result = await session.exec(select(ParkingLot))
-        return result.all()
+        result = await session.execute(select(ParkingLot))
+        return result.scalars().all()
 
     async def get_parking_lot_by_uid(
         self,
@@ -50,8 +52,8 @@ class ParkingService:
             ParkingLot.name.ilike(f"%{query}%") |
             ParkingLot.address.ilike(f"%{query}%")
         )
-        result = await session.exec(statement)
-        return result.all()
+        result = await session.execute(statement)
+        return result.scalars().all()
 
     # ======================= SLOTS =======================
 
@@ -113,7 +115,7 @@ class ParkingService:
         slot_stmt = select(ParkingSlot).where(
             ParkingSlot.parking_lot_id == parking_lot_uid
         )
-        slots = (await session.exec(slot_stmt)).all()
+        slots = (await session.execute(slot_stmt)).all()
 
         if not slots:
             return []
@@ -174,3 +176,5 @@ class ParkingService:
         await session.refresh(parking_lot)
 
         return parking_lot
+
+parking_service = ParkingService()

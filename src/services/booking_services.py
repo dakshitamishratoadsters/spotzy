@@ -5,7 +5,7 @@ from datetime import datetime
 
 from src.db.models.booking import Booking
 from src.db.models.parkingslot import ParkingSlot
-from src.db.accessor.schemas import BookingCreate
+from src.db.accessor.schemas.booking import BookingCreate
 
 
 class BookingService:
