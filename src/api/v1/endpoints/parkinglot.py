@@ -56,26 +56,26 @@ async def search_parking_lots(
         return await parking_service.search_parking_lots(q, session)
 
 
-@router.get("/{parking_lot_uid}/slots")
+@router.get("/{parking_lot_id}/slots")
 async def get_parking_lot_slots(
-        parking_lot_uid: UUID,
+        parking_lot_id: UUID,
         session: AsyncSession = Depends(get_session),
         current_user:User=Depends(get_current_user)
     ):
         return await parking_service.get_slots_by_parking_lot(
-            parking_lot_uid,
+            parking_lot_id,
             session
         )
-@router.get("/{parking_lot_uid}/available-slots")
+@router.get("/{parking_lot_id}/available-slots")
 async def get_available_slots(
-        parking_lot_uid: UUID,
+        parking_lot_id: UUID,
         start_time: datetime,
         end_time: datetime,
         session: AsyncSession = Depends(get_session),
         current_user:User=Depends(get_current_user)
     ):
         return await parking_service.get_available_slots(
-            parking_lot_uid,
+            parking_lot_id,
             start_time,
             end_time,
             session
