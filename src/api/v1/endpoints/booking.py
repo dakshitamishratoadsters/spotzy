@@ -19,12 +19,12 @@ router = APIRouter(prefix="/bookings", tags=["Bookings"])
 # Admin Helper
 # =========================
 def ensure_admin(user: User):
-    if user.role != "admin":  # or user.is_admin if you use that
+    print("DEBUG USER ROLE:", user.role)
+    if user.role.lower() != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required",
         )
-
 
 # =========================
 # Create Booking (USER)
@@ -55,10 +55,7 @@ async def create_booking(
 # =========================
 # Get My Bookings (USER)
 # =========================
-@router.get(
-    "/my",
-    response_model=list[BookingResponse],
-)
+@router.get("/my", response_model=list[BookingResponse])
 async def get_my_bookings(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
@@ -67,7 +64,6 @@ async def get_my_bookings(
         user_id=current_user.uid,
         session=session,
     )
-
 
 # =========================
 # Get Booking by ID (USER / ADMIN)
@@ -92,7 +88,7 @@ async def get_booking_by_id(
             detail="Booking not found",
         )
 
-    if booking.user_id != current_user.uid and current_user.role != "admin":
+    if booking.user_id != current_user.uid or current_user.role.lower() != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not allowed to view this booking",
@@ -157,8 +153,8 @@ async def get_all_bookings(
     if status:
         stmt = stmt.where(Booking.status == status)
 
-    result = await session.exec(stmt)
-    return result.all()
+    result = await session.execute(stmt)
+    return result.scalars().all()
 
 
 # =========================
