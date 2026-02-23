@@ -18,55 +18,66 @@ class BookingStatus(str, Enum):
     COMPLETED = "COMPLETED"
 
 
-
-
 # ===================== BOOKING =====================
 class Booking(SQLModel, table=True):
     __tablename__ = "bookings"
 
     uid: uuid.UUID = Field(
         default_factory=uuid.uuid4,
-        sa_column=Column(pg.UUID(as_uuid=True), primary_key=True)
+        sa_column=Column(pg.UUID(as_uuid=True), primary_key=True),
     )
 
     start_time: datetime
     end_time: datetime
 
     status: BookingStatus = Field(
-    sa_column=Column(
-        pg.VARCHAR,
-        nullable=False,
-        server_default=BookingStatus.BOOKED.value)
+        sa_column=Column(
+            pg.ENUM(
+                BookingStatus,
+                name="booking_status",
+                create_type=False,  # 🚨 Alembic controls this
+            ),
+            nullable=False,
+            server_default=BookingStatus.BOOKED.value,
+        )
     )
 
     user_id: uuid.UUID = Field(
         foreign_key="users.uid",
-        nullable=False
+        nullable=False,
     )
 
     slot_id: uuid.UUID = Field(
         foreign_key="parking_slots.uid",
-        nullable=False
+        nullable=False,
     )
 
     created_at: datetime = Field(
-        sa_column=Column(pg.TIMESTAMP, default=datetime.utcnow)
+        sa_column=Column(
+            pg.TIMESTAMP(timezone=True),
+            default=datetime.utcnow,
+        )
     )
+
     updated_at: datetime = Field(
-        sa_column=Column(pg.TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+        sa_column=Column(
+            pg.TIMESTAMP(timezone=True),
+            default=datetime.utcnow,
+            onupdate=datetime.utcnow,
+        )
     )
 
     user: Optional["User"] = Relationship(
         back_populates="bookings",
-        sa_relationship_kwargs={"lazy": "selectin"}
+        sa_relationship_kwargs={"lazy": "selectin"},
     )
 
     slot: Optional["ParkingSlot"] = Relationship(
         back_populates="bookings",
-        sa_relationship_kwargs={"lazy": "selectin"}
+        sa_relationship_kwargs={"lazy": "selectin"},
     )
 
     payment: Optional["Payment"] = Relationship(
         back_populates="booking",
-        sa_relationship_kwargs={"lazy": "selectin"}
+        sa_relationship_kwargs={"lazy": "selectin"},
     )

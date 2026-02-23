@@ -1,9 +1,10 @@
-from sqlmodel import select
-from sqlmodel.ext.asyncio.session import AsyncSession
 from uuid import UUID
 from datetime import datetime
 
-from src.db.models.booking import Booking
+from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
+
+from src.db.models.booking import Booking, BookingStatus
 from src.db.models.parkingslot import ParkingSlot
 from src.db.accessor.schemas.booking import BookingCreate
 
@@ -15,43 +16,44 @@ class BookingService:
     async def create_booking(
         self,
         booking_data: BookingCreate,
+        user_id: UUID,
         session: AsyncSession
     ) -> Booking:
 
+        # ⛔ time validation
         if booking_data.start_time >= booking_data.end_time:
-            raise ValueError("start_time must be less than end_time")
+            raise ValueError("start_time must be before end_time")
 
-        # 🔒 lock slot row (prevents double booking)
-        await session.exec(
+        # 🔒 lock parking slot row (prevents race conditions)
+        slot_stmt = (
             select(ParkingSlot)
             .where(ParkingSlot.uid == booking_data.slot_id)
             .with_for_update()
         )
+        slot = (await session.execute(slot_stmt)).one_or_none()
 
-        # check slot exists
-        slot = await session.get(ParkingSlot, booking_data.slot_id)
         if not slot:
             raise ValueError("Parking slot not found")
 
-        # check overlapping bookings (time-based)
+        # ⏱ overlap check
         overlap_stmt = select(Booking).where(
             Booking.slot_id == booking_data.slot_id,
             Booking.start_time < booking_data.end_time,
             Booking.end_time > booking_data.start_time,
-            Booking.status == "BOOKED"
+            Booking.status == BookingStatus.BOOKED,
         )
 
-        overlap = (await session.exec(overlap_stmt)).first()
+        overlap = (await session.execute(overlap_stmt)).first()
         if overlap:
             raise ValueError("Slot already booked for this time")
 
+        # ✅ create booking
         booking = Booking(
-            user_id=booking_data.user_id,
+            user_id=user_id,
             slot_id=booking_data.slot_id,
-            parking_lot_id=slot.parking_lot_id,
             start_time=booking_data.start_time,
             end_time=booking_data.end_time,
-            status="BOOKED"
+            status=BookingStatus.BOOKED,
         )
 
         session.add(booking)
@@ -60,7 +62,7 @@ class BookingService:
 
         return booking
 
-    # ======================= GET BOOKINGS =======================
+    # ======================= GET SINGLE BOOKING =======================
 
     async def get_booking_by_uid(
         self,
@@ -69,24 +71,26 @@ class BookingService:
     ) -> Booking | None:
         return await session.get(Booking, booking_uid)
 
+    # ======================= USER BOOKINGS =======================
+
     async def get_user_bookings(
         self,
         user_id: UUID,
         session: AsyncSession
     ):
-        statement = select(Booking).where(Booking.user_id == user_id)
-        result = await session.exec(statement)
+        stmt = select(Booking).where(Booking.user_id == user_id)
+        result = await session.exec(stmt)
         return result.all()
 
-    async def get_parking_lot_bookings(
+    # ======================= SLOT BOOKINGS (ADMIN) =======================
+
+    async def get_slot_bookings(
         self,
-        parking_lot_id: UUID,
+        slot_id: UUID,
         session: AsyncSession
     ):
-        statement = select(Booking).where(
-            Booking.parking_lot_id == parking_lot_id
-        )
-        result = await session.exec(statement)
+        stmt = select(Booking).where(Booking.slot_id == slot_id)
+        result = await session.exec(stmt)
         return result.all()
 
     # ======================= CANCEL BOOKING =======================
@@ -106,4 +110,16 @@ class BookingService:
         if booking.user_id != user_id:
             raise PermissionError("You cannot cancel this booking")
 
-        booking.stat
+        # 🚫 already cancelled/completed
+        if booking.status != BookingStatus.BOOKED:
+            raise ValueError("Only active bookings can be cancelled")
+
+        booking.status = BookingStatus.CANCELLED
+
+        await session.commit()
+        await session.refresh(booking)
+
+        return booking
+
+
+booking_service = BookingService()
