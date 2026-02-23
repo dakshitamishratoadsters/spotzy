@@ -6,7 +6,7 @@ import logging
 from src.core.config import Config
 
 passwd_context = CryptContext(
-    schemes=['bcrypt'],
+    schemes=['bcrypt_sha256'],
     deprecated ="auto"
 )
 
@@ -14,7 +14,7 @@ passwd_context = CryptContext(
 ACCESS_TOKEN_EXPIRY = 60  # minutes
 REFRESH_TOKEN_EXPIRY = 7  # days
 
-passwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+passwd_context = CryptContext(schemes=["bcrypt_sha256"], deprecated="auto")
 
 
 # ================= PASSWORD FUNCTIONS =================

@@ -2,6 +2,7 @@ from pydantic import BaseModel, EmailStr, validator
 from uuid import UUID
 from datetime import datetime
 import re
+from pydantic import Field
 
 # ---------- USER ----------
 class Signup(BaseModel):
