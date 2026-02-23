@@ -79,8 +79,8 @@ class BookingService:
         session: AsyncSession
     ):
         stmt = select(Booking).where(Booking.user_id == user_id)
-        result = await session.exec(stmt)
-        return result.all()
+        result = await session.execute(stmt)
+        return result.scalars().all()
 
     # ======================= SLOT BOOKINGS (ADMIN) =======================
 

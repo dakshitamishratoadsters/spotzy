@@ -1,16 +1,17 @@
 import uuid
-from datetime import datetime
-from typing import List, Optional ,TYPE_CHECKING
+from datetime import datetime, timezone
+from typing import Optional, TYPE_CHECKING
 
 from sqlmodel import SQLModel, Field, Relationship
-from sqlalchemy import Column, Enum
+from sqlalchemy import Column, DateTime
 from sqlalchemy.dialects import postgresql as pg
 from enum import Enum
+
 if TYPE_CHECKING:
-  from src.db.models.user import User 
-  from src.db.models.parkingslot import ParkingSlot
-  from src.db.models.payment import Payment
-  
+    from src.db.models.user import User
+    from src.db.models.parkingslot import ParkingSlot
+    from src.db.models.payment import Payment
+
 
 class BookingStatus(str, Enum):
     BOOKED = "BOOKED"
@@ -27,15 +28,21 @@ class Booking(SQLModel, table=True):
         sa_column=Column(pg.UUID(as_uuid=True), primary_key=True),
     )
 
-    start_time: datetime
-    end_time: datetime
+    # 🔥 FIX 1: timezone-aware columns
+    start_time: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
+
+    end_time: datetime = Field(
+        sa_column=Column(DateTime(timezone=True), nullable=False)
+    )
 
     status: BookingStatus = Field(
         sa_column=Column(
             pg.ENUM(
                 BookingStatus,
                 name="booking_status",
-                create_type=False,  # 🚨 Alembic controls this
+                create_type=False,
             ),
             nullable=False,
             server_default=BookingStatus.BOOKED.value,
@@ -52,18 +59,21 @@ class Booking(SQLModel, table=True):
         nullable=False,
     )
 
+    # 🔥 FIX 2: timezone-aware defaults
     created_at: datetime = Field(
         sa_column=Column(
-            pg.TIMESTAMP(timezone=True),
-            default=datetime.utcnow,
+            DateTime(timezone=True),
+            default=lambda: datetime.now(timezone.utc),
+            nullable=False,
         )
     )
 
     updated_at: datetime = Field(
         sa_column=Column(
-            pg.TIMESTAMP(timezone=True),
-            default=datetime.utcnow,
-            onupdate=datetime.utcnow,
+            DateTime(timezone=True),
+            default=lambda: datetime.now(timezone.utc),
+            onupdate=lambda: datetime.now(timezone.utc),
+            nullable=False,
         )
     )
 
