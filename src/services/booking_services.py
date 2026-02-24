@@ -91,7 +91,6 @@ class BookingService:
     ):
         stmt = select(Booking).where(Booking.slot_id == slot_id)
         result = await session.execute(stmt)
-        print(type(result))
         return result.scalars().all()
 
     # ======================= CANCEL BOOKING =======================

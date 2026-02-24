@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     REDIS_DB: int = 0
     
 
+    RAZORPAY_KEY_ID:str
+    RAZORPAY_KEY_SECRET:str
+
     model_config = SettingsConfigDict(
         env_file=".env", 
         extra="ignore"
