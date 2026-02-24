@@ -90,8 +90,9 @@ class BookingService:
         session: AsyncSession
     ):
         stmt = select(Booking).where(Booking.slot_id == slot_id)
-        result = await session.exec(stmt)
-        return result.all()
+        result = await session.execute(stmt)
+        print(type(result))
+        return result.scalars().all()
 
     # ======================= CANCEL BOOKING =======================
 
