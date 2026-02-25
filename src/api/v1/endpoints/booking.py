@@ -3,7 +3,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select
-from pydantic import BaseModel
 
 from src.db.database import get_session
 from src.api.v1.dependencies import get_current_user
@@ -19,12 +18,12 @@ router = APIRouter(prefix="/bookings", tags=["Bookings"])
 # Admin Helper
 # =========================
 def ensure_admin(user: User):
-    print("DEBUG USER ROLE:", user.role)
     if user.role.lower() != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required",
         )
+
 
 # =========================
 # Create Booking (USER)
@@ -39,6 +38,9 @@ async def create_booking(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
+    """
+    Creates booking with status PAYMENT_PENDING
+    """
     try:
         return await booking_service.create_booking(
             booking_data=booking_data,
@@ -65,6 +67,7 @@ async def get_my_bookings(
         session=session,
     )
 
+
 # =========================
 # Get Booking by ID (USER / ADMIN)
 # =========================
@@ -88,7 +91,8 @@ async def get_booking_by_id(
             detail="Booking not found",
         )
 
-    if booking.user_id != current_user.uid or current_user.role.lower() != "admin":
+    # ✅ FIXED LOGIC
+    if booking.user_id != current_user.uid and current_user.role.lower() != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not allowed to view this booking",
@@ -109,6 +113,11 @@ async def cancel_booking(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
+    """
+    User can cancel ONLY:
+    - PAYMENT_PENDING
+    - PAYMENT_FAILED
+    """
     try:
         booking = await booking_service.cancel_booking(
             booking_uid=booking_id,
@@ -178,22 +187,21 @@ async def get_slot_bookings(
 
 
 # =========================
-# Update Booking Status (ADMIN)
+# Complete Booking (ADMIN)
 # =========================
-class BookingStatusUpdate(BaseModel):
-    status: BookingStatus
-
-
-@router.patch(
-    "/{booking_id}/status",
+@router.post(
+    "/{booking_id}/complete",
     response_model=BookingResponse,
 )
-async def update_booking_status(
+async def complete_booking(
     booking_id: UUID,
-    data: BookingStatusUpdate,
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
+    """
+    Only ADMIN
+    Only CONFIRMED → COMPLETED
+    """
     ensure_admin(current_user)
 
     booking = await session.get(Booking, booking_id)
@@ -203,7 +211,13 @@ async def update_booking_status(
             detail="Booking not found",
         )
 
-    booking.status = data.status
+    if booking.status != BookingStatus.BOOKED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only booked bookings can be completed",
+        )
+
+    booking.status = BookingStatus.COMPLETED
     await session.commit()
     await session.refresh(booking)
 

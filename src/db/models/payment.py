@@ -16,6 +16,7 @@ class PaymentStatus(str, Enum):
     paid = "paid"
     failed = "failed"
     refunded = "refunded"
+    
 
 
 class Payment(SQLModel, table=True):

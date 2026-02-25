@@ -1,11 +1,11 @@
 import uuid
 from datetime import datetime, timezone
 from typing import Optional, TYPE_CHECKING
+from enum import Enum
 
 from sqlmodel import SQLModel, Field, Relationship
 from sqlalchemy import Column, DateTime
 from sqlalchemy.dialects import postgresql as pg
-from enum import Enum
 
 if TYPE_CHECKING:
     from src.db.models.user import User
@@ -14,9 +14,12 @@ if TYPE_CHECKING:
 
 
 class BookingStatus(str, Enum):
-    BOOKED = "BOOKED"
-    CANCELLED = "CANCELLED"
+    PAYMENT_PENDING = "PAYMENT_PENDING"
+    CONFIRMED = "CONFIRMED"
     COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
+    PAYMENT_FAILED = "PAYMENT_FAILED"
+    BOOKED = "BOOKED"  # legacy (keep for DB compatibility)
 
 
 # ===================== BOOKING =====================
@@ -28,7 +31,6 @@ class Booking(SQLModel, table=True):
         sa_column=Column(pg.UUID(as_uuid=True), primary_key=True),
     )
 
-    # 🔥 FIX 1: timezone-aware columns
     start_time: datetime = Field(
         sa_column=Column(DateTime(timezone=True), nullable=False)
     )
@@ -45,8 +47,8 @@ class Booking(SQLModel, table=True):
                 create_type=False,
             ),
             nullable=False,
-            server_default=BookingStatus.BOOKED.value,
-        )
+        ),
+        default=BookingStatus.PAYMENT_PENDING,
     )
 
     user_id: uuid.UUID = Field(
@@ -59,7 +61,6 @@ class Booking(SQLModel, table=True):
         nullable=False,
     )
 
-    # 🔥 FIX 2: timezone-aware defaults
     created_at: datetime = Field(
         sa_column=Column(
             DateTime(timezone=True),
@@ -77,17 +78,6 @@ class Booking(SQLModel, table=True):
         )
     )
 
-    user: Optional["User"] = Relationship(
-        back_populates="bookings",
-        sa_relationship_kwargs={"lazy": "selectin"},
-    )
-
-    slot: Optional["ParkingSlot"] = Relationship(
-        back_populates="bookings",
-        sa_relationship_kwargs={"lazy": "selectin"},
-    )
-
-    payment: Optional["Payment"] = Relationship(
-        back_populates="booking",
-        sa_relationship_kwargs={"lazy": "selectin"},
-    )
+    user: Optional["User"] = Relationship(back_populates="bookings")
+    slot: Optional["ParkingSlot"] = Relationship(back_populates="bookings")
+    payment: Optional["Payment"] = Relationship(back_populates="booking")
