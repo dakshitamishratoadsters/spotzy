@@ -5,6 +5,7 @@ from datetime import datetime
 
 from src.db.database import get_session
 from src.services.parking_services import parking_service
+from src.services.slots_services import parking_slot_service
 from src.db.accessor.schemas.parkinglot import (
     ParkingLotCreate,
     ParkingLotResponse,
@@ -62,7 +63,7 @@ async def get_parking_lot_slots(
         session: AsyncSession = Depends(get_session),
         current_user:User=Depends(get_current_user)
     ):
-        return await parking_service.get_slots_by_parking_lot(
+        return await parking_slot_service.get_slots_by_parking_lot(
             parking_lot_id,
             session
         )

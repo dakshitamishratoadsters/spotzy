@@ -3,7 +3,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel.ext.asyncio.session import AsyncSession
 from sqlmodel import select
-
 from src.db.database import get_session
 from src.api.v1.dependencies import get_current_user
 from src.db.models.user import User

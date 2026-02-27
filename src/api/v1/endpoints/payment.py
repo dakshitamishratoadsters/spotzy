@@ -59,7 +59,7 @@ async def create_payment_order(
         )
 
     # 4️⃣ Prevent duplicate successful payment
-    result = await session.exec(
+    result = await session.execute(
         select(Payment).where(
             Payment.booking_id == booking.uid,
             Payment.status == PaymentStatus.paid,
@@ -99,10 +99,10 @@ async def get_payment_by_booking(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ):
-    result = await session.exec(
+    result = await session.execute(
         select(Payment).where(Payment.booking_id == booking_id)
     )
-    payment = result.first()
+    payment = result.scalars().first()
 
     if not payment:
         raise HTTPException(

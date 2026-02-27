@@ -40,7 +40,7 @@ class BookingService:
             Booking.slot_id == booking_data.slot_id,
             Booking.start_time < booking_data.end_time,
             Booking.end_time > booking_data.start_time,
-            Booking.status == BookingStatus.BOOKED,
+            Booking.status == BookingStatus.PAYMENT_PENDING,
         )
 
         overlap = (await session.execute(overlap_stmt)).first()
@@ -53,7 +53,7 @@ class BookingService:
             slot_id=booking_data.slot_id,
             start_time=booking_data.start_time,
             end_time=booking_data.end_time,
-            status=BookingStatus.BOOKED,
+            status=BookingStatus.PAYMENT_PENDING,
         )
 
         session.add(booking)
